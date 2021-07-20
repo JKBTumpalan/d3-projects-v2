@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PH Project</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+  </head>
+  <body>
+    <div id="content">
+      <div class="info" style="width: 500px; height: 200px">
+        <h2>Point to the PH regions to check the provinces</h2>
+        <p>Path details: <span></span></p>
+        <ul class="province_list"></ul>
+      </div>
+      <svg width="1080px" height="580px">
+        <g class="map"></g>
+        <g class="bounding-box"><rect></rect></g>
+        <g class="centroid"><circle r="4"></circle></g>
+      </svg>
+    </div>
+    <script>
+      // The svg
+      var svg = d3.select("svg"),
+        width = +svg.attr("width"),
+        height = +svg.attr("height");
+
+      var projection = d3
+        .geoMercator()
+        .center([20, 0]) //center placement;
+        .scale([1700]) //zoom
+        .translate([-2800, 650]); //placement
+
+      var pathGenerator = d3.geoPath().projection(projection);
+
+      //E is the mouse event
+      //D is the feature
+      function handleMouseover(e, d) {
+        let pixelArea = pathGenerator.area(d);
+        let bounds = pathGenerator.bounds(d);
+        let centroid = pathGenerator.centroid(d);
+        let measure = pathGenerator.measure(d);
+
+        console.log(
+          `Pixel area: ${pixelArea} bounds: ${bounds} centroid: ${centroid} measure: ${measure}`
+        );
+
+        console.log(d);
+
+        var provinces = d.features.map((province) => {
+          return province.properties.ADM2_EN;
+        });
+
+        var provData = d3
+          .select("#content .info ul")
+          .selectAll("li")
+          .data(provinces)
+          .join("li")
+          .text((p) => p);
+
+        d3.select("#content .info p span").text(
+          " (path.area = " +
+            pixelArea.toFixed(1) +
+            " path.measure = " +
+            measure.toFixed(1) +
+            ")"
+        );
+
+        d3.select(this).style("fill", "blue");
+
+        // d3.select("#content .bounding-box rect")
+        //   .attr("x", bounds[0][0])
+        //   .attr("y", bounds[0][1])
+        //   .attr("width", bounds[1][0] - bounds[0][0])
+        //   .attr("height", bounds[1][1] - bounds[0][1])
+        //   .style("fill", "red")
+        //   .attr("border", "1px solid black");
+
+        d3.select("#content .centroid")
+          .style("display", "inline")
+          .style("fill", "red")
+          .attr("transform", "translate(" + centroid + ")");
+      }
+
+      function handleMouseout(e, d) {
+        d3.select(this).style("fill", "gray");
+      }
+
+      Promise.all([
+        d3.json(
+          "https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/geojson/provinces/hires/provinces-region-ph010000000.0.1.json"
+        ),
+        d3.json(
+          "https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/geojson/provinces/hires/provinces-region-ph020000000.0.1.json"
+        ),
+        d3.json(
+          "https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/geojson/provinces/hires/provinces-region-ph030000000.0.1.json"
+        ),
+        d3.json(
+          "https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/geojson/provinces/hires/provinces-region-ph040000000.0.1.json"
+        ),
+        d3.json(
+          "https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/geojson/provinces/hires/provinces-region-ph050000000.0.1.json"
+        ),
+        d3.json(
+          "https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/geojson/provinces/hires/provinces-region-ph140000000.0.1.json"
+        ),
+        d3.json(
+          "https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/geojson/provinces/hires/provinces-region-ph170000000.0.1.json"
+        ),
+        // d3.json("./philippines.geojson"),
+      ]).then(update);
+
+      function update(dataJson) {
+        var mainSvg = d3
+          .select("#content g.map")
+          .selectAll("path")
+          .data(dataJson, (d) => d.features);
+
+        mainSvg
+          .enter()
+          .append("path")
+          .attr("d", pathGenerator)
+          .on("mouseover", handleMouseover)
+          .on("mouseout", handleMouseout)
+          .style("stroke", "black")
+          .attr("stroke-width", 0.3)
+          .style("fill", "gray");
+      }
+    </script>
+  </body>
+</html>
